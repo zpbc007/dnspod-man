@@ -1,5 +1,6 @@
 import Axios from 'axios'
 import { promiseFirstSuccess } from './utils/promiseFirstSuccess'
+import { logger } from './logger'
 
 function getIpFromUrl(url: string) {
     return Axios.get<string>(url, {
@@ -9,7 +10,7 @@ function getIpFromUrl(url: string) {
         }
     }).then((res) => {
         if (!res || !res.data) {
-            console.error(`get error response`)
+            logger.error(`get error response`)
 
             return ''
         }
@@ -17,16 +18,16 @@ function getIpFromUrl(url: string) {
         const matched = res.data.match(/\d+\.\d+\.\d+\.\d+/)
 
         if (!matched || matched.length === 0) {
-            console.error(`can not find ip string in response: ${res.data}`)
+            logger.error(`can not find ip string in response: ${res.data}`)
             return ''
         }
 
         const ip = matched[0]
 
-        console.log(`get ip: ${ip} from url: ${url}`)
+        logger.info(`get ip: ${ip} from url: ${url}`)
         return ip
     }).catch((err) => {
-        console.error(`request ${url} filed: ${err}`)
+        logger.error(`request ${url} filed: ${err}`)
 
         return Promise.reject(err)
     })

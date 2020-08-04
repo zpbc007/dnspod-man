@@ -4,46 +4,68 @@ import { readFile } from 'fs'
 import { createApiAxios, createApi } from './api'
 import { IGlobalConfig } from './type'
 import { promisify } from 'util'
+import { ILogConfig, create, logger } from './logger'
 
 const asyncReadFile = promisify(readFile)
 
-async function boot(configPath: string) {
+/** 加载配置 */
+async function loadConfig() {
+    const dnsConfigPath = resolve(__dirname, '../config.json')
+    const loggerConfigPath = resolve(__dirname, '../logConfig.json')
+
+    return Promise.all([
+        asyncReadFile(dnsConfigPath, {encoding: 'utf-8'}),
+        asyncReadFile(loggerConfigPath, {encoding: 'utf-8'}),
+    ]).then(([dnsConfigStr, loggerConfigStr]) => [
+        JSON.parse(dnsConfigStr),
+        JSON.parse(loggerConfigStr)
+    ] as [IGlobalConfig, ILogConfig])
+}
+
+async function boot() {
+    const [
+        dnsConfig,
+        loggerConfig
+    ] = await loadConfig()
+
+    create(loggerConfig)
+    logger.info('logger created by config: %o', loggerConfig)
+
     // 获取公网 ip
     const ip = await getPublicIp()
     if (!ip) {
-        console.error(`can not get public ip`)
+        logger.error(`can not get public ip`)
         return process.exit() 
     }
-    console.log(`get public ip: ${ip}`)
-    
+    logger.info(`get public ip: ${ip}`)
+
     // 实例化 axios 
-    const config: IGlobalConfig = JSON.parse(await asyncReadFile(configPath, {encoding: 'utf-8'}))
-    console.log(`get config: ${JSON.stringify(config)}`)
-    const apiAxios = createApiAxios(config)
+    const apiAxios = createApiAxios(dnsConfig)
+    logger.info('api axios created by config: %o', dnsConfig)
 
     // 初始化 api 请求
     const {record} = createApi(apiAxios)
-    
+
     // 获取记录列表
     const recordList = await record.getList({
-        domain: config.domain
+        domain: dnsConfig.domain
     })
 
     // 获取对应的子域名记录 id
-    const targetRecord = recordList.records.find((record) => record.name === config.subDomain)
+    const targetRecord = recordList.records.find((record) => record.name === dnsConfig.subDomain)
     if (!targetRecord) {
-        console.error(`can not find the record: ${config.subDomain}`)
+        logger.error(`can not find the record: ${dnsConfig.subDomain}`)
         return process.exit() 
     }
 
     // ip 没变不需要更新
     if (targetRecord.value === ip) {
-        console.warn(`ip not change: ${ip}`)
+        logger.warn(`ip not change: ${ip}`)
         return process.exit() 
     }
 
     const modifyRes = await record.modify({
-        domain: config.domain,
+        domain: dnsConfig.domain,
         record_id: targetRecord.id,
         sub_domain: targetRecord.name,
         record_type: targetRecord.type,
@@ -52,12 +74,12 @@ async function boot(configPath: string) {
     })
 
     if (modifyRes && modifyRes.record && modifyRes.record.value === ip) {
-        console.log(`update success new ip: ${ip}`)
+        logger.log(`update success new ip: ${ip}`)
     } else {
-        console.log(`modify error: ${JSON.stringify(modifyRes)}`)
+        logger.error(`modify error: ${JSON.stringify(modifyRes)}`)
     }
 
     process.exit()
 }
 
-boot(resolve(__dirname, '../config.json'))
+boot()

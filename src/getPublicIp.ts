@@ -2,7 +2,12 @@ import Axios from 'axios'
 import { promiseFirstSuccess } from './utils/promiseFirstSuccess'
 
 function getIpFromUrl(url: string) {
-    return Axios.get<string>(url).then((res) => {
+    return Axios.get<string>(url, {
+        headers: {
+            'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.105 Safari/537.36',
+            pragma: 'no-cache'
+        }
+    }).then((res) => {
         if (!res || !res.data) {
             console.error(`get error response`)
 

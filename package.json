@@ -1,0 +1,19 @@
+{
+  "name": "dnspod-man",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/zpbc007/dnspod-man.git",
+  "author": "赵鹏 <zhapengchrdw@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "run": "tsc && node ./dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^12.6.0"
+  },
+  "dependencies": {
+    "axios": "^0.19.2",
+    "query-string": "^6.13.1"
+  }
+}

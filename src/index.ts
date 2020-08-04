@@ -11,7 +11,8 @@ async function boot(configPath: string) {
     // 获取公网 ip
     const ip = await getPublicIp()
     if (!ip) {
-        return console.error(`can not get public ip`)
+        console.error(`can not get public ip`)
+        return process.exit() 
     }
     console.log(`get public ip: ${ip}`)
     
@@ -31,12 +32,14 @@ async function boot(configPath: string) {
     // 获取对应的子域名记录 id
     const targetRecord = recordList.records.find((record) => record.name === config.subDomain)
     if (!targetRecord) {
-        return console.error(`can not find the record: ${config.subDomain}`)
+        console.error(`can not find the record: ${config.subDomain}`)
+        return process.exit() 
     }
 
     // ip 没变不需要更新
     if (targetRecord.value === ip) {
-        return console.warn(`ip not change: ${ip}`)
+        console.warn(`ip not change: ${ip}`)
+        return process.exit() 
     }
 
     const modifyRes = await record.modify({
